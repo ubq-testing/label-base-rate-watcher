@@ -1,17 +1,17 @@
+// @ts-expect-error - type defs
 import * as core from "@actions/core";
+// @ts-expect-error - type defs
 import * as github from "@actions/github";
 import { Octokit } from "@octokit/rest";
 import { Value } from "@sinclair/typebox/build/cjs/value";
-import { envSchema, pluginSettingsSchema, PluginInputs, pluginSettingsValidator } from "./types";
 import { plugin } from "./plugin";
-
+import { PluginInputs, pluginSettingsSchema, pluginSettingsValidator } from "./types/plugin-input";
 /**
  * How a GitHub action executes the plugin.
  */
 export async function run() {
   const payload = github.context.payload.inputs;
 
-  const env = Value.Decode(envSchema, payload.env);
   const settings = Value.Decode(pluginSettingsSchema, Value.Default(pluginSettingsSchema, JSON.parse(payload.settings)));
 
   if (!pluginSettingsValidator.test(settings)) {
@@ -27,7 +27,7 @@ export async function run() {
     ref: payload.ref,
   };
 
-  await plugin(inputs, env);
+  await plugin(inputs);
 
   return returnDataToKernel(inputs.authToken, inputs.stateId, {});
 }

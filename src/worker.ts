@@ -1,6 +1,6 @@
 import { Value } from "@sinclair/typebox/value";
 import { plugin } from "./plugin";
-import { Env, envValidator, pluginSettingsSchema, pluginSettingsValidator } from "./types";
+import { Env, envValidator, pluginSettingsSchema, pluginSettingsValidator } from "./types/plugin-input";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -20,7 +20,7 @@ export default {
       }
 
       const webhookPayload = await request.json();
-      const settings = Value.Decode(pluginSettingsSchema, Value.Default(pluginSettingsSchema, JSON.parse(webhookPayload.settings)));
+      const settings = Value.Decode(pluginSettingsSchema, Value.Default(pluginSettingsSchema, webhookPayload.settings));
 
       if (!pluginSettingsValidator.test(settings)) {
         const errors: string[] = [];
@@ -45,9 +45,8 @@ export default {
         });
       }
 
-      webhookPayload.eventPayload = JSON.parse(webhookPayload.eventPayload);
       webhookPayload.settings = settings;
-      await plugin(webhookPayload, env);
+      await plugin(webhookPayload);
       return new Response(JSON.stringify("OK"), { status: 200, headers: { "content-type": "application/json" } });
     } catch (error) {
       return handleUncaughtError(error);
