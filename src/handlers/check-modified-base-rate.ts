@@ -5,7 +5,7 @@ import { updateBaseRate } from "./update-base-rate";
 export const ZERO_SHA = "0000000000000000000000000000000000000000";
 const BASE_RATE_FILES = [".github/ubiquibot-config.yml", ".github/.ubiquibot-config.yml"];
 
-export async function checkModifiedBaseRate(context: Context<"push">): Promise<void> {
+export async function checkModifiedBaseRate(context: Context): Promise<void> {
   const { logger, payload } = context;
 
   const repo = payload.repository.name;

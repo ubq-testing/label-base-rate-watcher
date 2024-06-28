@@ -1,6 +1,4 @@
-// @ts-expect-error - type defs
 import * as core from "@actions/core";
-// @ts-expect-error - type defs
 import * as github from "@actions/github";
 import { Octokit } from "@octokit/rest";
 import { Value } from "@sinclair/typebox/build/cjs/value";
