@@ -10,6 +10,7 @@ export async function getBaseRateChanges(context: Context, owner: string, repo: 
   const logger = context.logger;
   const commitSha = context.payload.head_commit?.id;
   let commitData;
+
   try {
     commitData = await context.octokit.repos.getCommit({
       owner,
