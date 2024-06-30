@@ -141,7 +141,9 @@ describe("Label Base Rate Changes", () => {
     expect(issue2?.labels).toHaveLength(2);
 
     await plugin(context);
-    expect(errorSpy).toHaveBeenCalledWith("User is not an admin or billing manager");
+    expect(errorSpy).toHaveBeenNthCalledWith(1, "Pusher is not an admin or billing manager");
+    expect(errorSpy).toHaveBeenNthCalledWith(2, "Sender is not an admin or billing manager");
+
   });
 
   it("Should update base rate if the user is authenticated", async () => {
@@ -410,10 +412,12 @@ describe("Label Base Rate Changes", () => {
     const errorSpy = jest.spyOn(context.logger, "error");
 
     await plugin(context);
-    expect(errorSpy).toHaveBeenCalledWith("An update is only possible by the same user who pushed the code");
-    expect(warnSpy).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenNthCalledWith(1, "Pusher is not an admin or billing manager");
+    expect(warnSpy).toHaveBeenCalledWith("Changes should be pushed by and triggered by an admin or billing manager.");
     expect(infoSpy).not.toHaveBeenCalled();
   });
+
+
 });
 
 const authedUser = {

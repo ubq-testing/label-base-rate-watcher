@@ -23,14 +23,8 @@ export async function plugin(context: Context) {
     return;
   }
 
-  // we want these to be the same
-  if (sender !== pusher) {
-    logger.error("An update is only possible by the same user who pushed the code");
-    return;
-  }
-
-  if (!(await isUserAdminOrBillingManager(context, sender))) {
-    logger.error("User is not an admin or billing manager");
+  if (!(await isUserAdminOrBillingManager(context, sender, pusher))) {
+    logger.warn("Changes should be pushed and triggered by an admin or billing manager.")
     return;
   }
 

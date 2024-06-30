@@ -18,14 +18,33 @@ export function calculateTaskPrice(context: Context, timeValue: number, priority
   return 1000 * base * timeValue * priority;
 }
 
-export async function isUserAdminOrBillingManager(context: Context, username: string): Promise<"admin" | "billing_manager" | false> {
+export async function isUserAdminOrBillingManager(context: Context, username: string, pusher: string): Promise<boolean> {
   const { name } = context.payload.repository;
   const owner = context.payload.organization;
-  const isAdmin = await checkIfIsAdmin(context, name, username, owner?.login);
-  if (isAdmin) return "admin";
 
-  const isBillingManager = await checkIfIsBillingManager(owner?.login ?? "", username, context);
-  if (isBillingManager) return "billing_manager";
+  let pusherAuthed;
+  let senderAuthed;
+
+  const isPusherAdmin = await checkIfIsAdmin(context, name, pusher, owner?.login);
+  const isSenderAdmin = await checkIfIsAdmin(context, name, username, owner?.login);
+
+  const isSenderBillingManager = await checkIfIsBillingManager(owner?.login ?? "", username, context);
+  const isPusherBillingManager = await checkIfIsBillingManager(owner?.login ?? "", pusher, context);
+
+  pusherAuthed = isPusherAdmin || isPusherBillingManager;
+  senderAuthed = isSenderAdmin || isSenderBillingManager;
+
+  if (!pusherAuthed) {
+    context.logger.error("Pusher is not an admin or billing manager");
+  }
+
+  if (!senderAuthed) {
+    context.logger.error("Sender is not an admin or billing manager");
+  }
+
+  if (pusherAuthed && senderAuthed) {
+    return true;
+  }
 
   return false;
 }
