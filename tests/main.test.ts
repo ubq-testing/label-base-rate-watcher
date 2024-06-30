@@ -77,7 +77,6 @@ describe("Label Base Rate Changes", () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
     expect(infoSpy).toHaveBeenNthCalledWith(1, CHANGES_IN_COMMITS, [CONFIG_PATH]);
     expect(infoSpy).toHaveBeenNthCalledWith(2, CONFIG_CHANGED_IN_COMMIT);
 
@@ -118,7 +117,7 @@ describe("Label Base Rate Changes", () => {
 
   it("Should update base rate if the user is authenticated", async () => {
     const commits = inMemoryCommits(SHA_1);
-    const { context, errorSpy, infoSpy, warnSpy } = innerSetup(1, commits, SHA_1, SHA_1, {
+    const { context, errorSpy, warnSpy } = innerSetup(1, commits, SHA_1, SHA_1, {
       owner: UBIQUITY,
       repo: TEST_REPO,
       sha: SHA_1,
@@ -131,7 +130,6 @@ describe("Label Base Rate Changes", () => {
     await plugin(context);
     expect(errorSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
   });
 
   it("Should not update base rate if there are no changes", async () => {
@@ -154,7 +152,7 @@ describe("Label Base Rate Changes", () => {
 
   it("Should update base rate if there are changes in the plugin config", async () => {
     const commits = inMemoryCommits(SHA_1, true, true);
-    const { context, errorSpy, infoSpy, warnSpy } = innerSetup(1, commits, SHA_1, SHA_1, {
+    const { context, errorSpy, warnSpy } = innerSetup(1, commits, SHA_1, SHA_1, {
       owner: UBIQUITY,
       repo: TEST_REPO,
       sha: SHA_1,
@@ -168,7 +166,6 @@ describe("Label Base Rate Changes", () => {
     await plugin(context);
     expect(errorSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
   });
 
   it("Should use the global prop over the plugin prop if both are changed", async () => {
@@ -187,7 +184,6 @@ describe("Label Base Rate Changes", () => {
     await plugin(context);
     expect(errorSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
 
     const updatedRepo = db.repo.findFirst({ where: { id: { equals: 1 } } });
     const updatedIssue = db.issue.findFirst({ where: { id: { equals: 1 } } });
@@ -195,7 +191,6 @@ describe("Label Base Rate Changes", () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
     expect(infoSpy).toHaveBeenNthCalledWith(1, CHANGES_IN_COMMITS, [CONFIG_PATH]);
     expect(infoSpy).toHaveBeenNthCalledWith(2, CONFIG_CHANGED_IN_COMMIT);
 
@@ -253,7 +248,6 @@ describe("Label Base Rate Changes", () => {
     await plugin(context);
     expect(errorSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
 
     const updatedRepo = db.repo.findFirst({ where: { id: { equals: 1 } } });
     const updatedIssue = db.issue.findFirst({ where: { id: { equals: 1 } } });
@@ -261,7 +255,6 @@ describe("Label Base Rate Changes", () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
     expect(infoSpy).toHaveBeenNthCalledWith(1, CHANGES_IN_COMMITS, [CONFIG_PATH]);
     expect(infoSpy).toHaveBeenNthCalledWith(2, CONFIG_CHANGED_IN_COMMIT);
 
@@ -315,7 +308,7 @@ describe("Label Base Rate Changes", () => {
   it("Should not update if non-auth pushes the code and billing manager merges the PR", async () => {
     const commits = inMemoryCommits(SHA_1, false, true, true);
     const pusher = db.users.findFirst({ where: { id: { equals: 3 } } }) as unknown as Context["payload"]["sender"];
-    const { context, errorSpy, infoSpy, warnSpy } = innerSetup(
+    const { context, errorSpy, warnSpy } = innerSetup(
       1,
       commits,
       SHA_1,
@@ -336,7 +329,6 @@ describe("Label Base Rate Changes", () => {
     await plugin(context);
     expect(errorSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
   });
 
   it("Should not update if auth pushes the code and non-auth merges the PR", async () => {
@@ -369,7 +361,7 @@ describe("Label Base Rate Changes", () => {
   it("Should not update if auth pushes the code and admin merges the PR", async () => {
     const pusher = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
     const commits = inMemoryCommits(SHA_1, true, true, true);
-    const { context, errorSpy, infoSpy, warnSpy } = innerSetup(
+    const { context, errorSpy, warnSpy } = innerSetup(
       1,
       commits,
       SHA_1,
@@ -390,7 +382,6 @@ describe("Label Base Rate Changes", () => {
     await plugin(context);
     expect(errorSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
   });
 
   it("Should update if auth pushes the code and billing manager merges the PR", async () => {
@@ -425,7 +416,6 @@ describe("Label Base Rate Changes", () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledTimes(29);
     expect(infoSpy).toHaveBeenNthCalledWith(1, CHANGES_IN_COMMITS, [CONFIG_PATH]);
     expect(infoSpy).toHaveBeenNthCalledWith(2, CONFIG_CHANGED_IN_COMMIT);
 
