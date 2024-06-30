@@ -1,4 +1,3 @@
-import { createLogger } from "@octokit/webhooks/dist-types/createLogger";
 import { Context } from "../types/context";
 import { Label } from "../types/github";
 import { createLabel, updateLabel, labelExists, deleteLabel } from "../utils/label";
@@ -18,7 +17,8 @@ export async function updateLabels(
   previousBaseRate: number | null,
   newBaseRate: number | null
 ) {
-  if (!previousBaseRate || !newBaseRate) {
+  if (!newBaseRate) {
+    context.logger.error("No new base rate found in the diff");
     return;
   }
 

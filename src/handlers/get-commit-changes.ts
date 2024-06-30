@@ -1,7 +1,7 @@
 import { Context } from "../types/context";
 
 // Collects all the modified and added files from the commits.
-export function getCommitChanges(logger: Context["logger"], commits: Context["payload"]["commits"]): string[] {
+export function getCommitChanges(commits: Context["payload"]["commits"]): string[] {
   const changes = [] as string[];
 
   for (const commit of commits) {
@@ -18,6 +18,5 @@ export function getCommitChanges(logger: Context["logger"], commits: Context["pa
     }
   }
 
-  logger.info("Changes in the commits:", changes);
   return changes;
 }

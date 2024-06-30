@@ -19,7 +19,7 @@ export async function checkModifiedBaseRate(context: Context): Promise<void> {
     return;
   }
 
-  const changes = getCommitChanges(logger, payload.commits);
+  const changes = getCommitChanges(payload.commits);
 
   if (changes && changes.length === 0) {
     logger.info("No files were changed in the commits, so no action is required.");

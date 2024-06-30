@@ -7,11 +7,7 @@ import { Context } from "./types/context";
  * How a worker executes the plugin.
  */
 export async function plugin(context: Context) {
-  const { eventName, payload, logger } = context;
-  if (eventName !== "push") {
-    logger.warn("Unsupported event", { eventName: eventName });
-    return;
-  }
+  const { payload, logger } = context;
 
   // who triggered the event
   const sender = payload.sender?.login;
@@ -59,6 +55,11 @@ export async function runPlugin(inputs: PluginInputs) {
     env: {} as never, // not required for this plugin
     adapters: {} as never, // not required for this plugin
   };
+
+  if (context.eventName !== "push") {
+    context.logger.fatal("Unsupported event", { eventName: context.eventName });
+    return;
+  }
 
   await plugin(context);
 }

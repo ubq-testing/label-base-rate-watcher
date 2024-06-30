@@ -12,7 +12,7 @@ export function calculateLabelValue(label: string): number {
   return 0;
 }
 
-export function calculateTaskPrice(context: Context, timeValue: number, priorityValue: number, baseValue?: number): number {
+export function calculateTaskPrice(context: Context, timeValue: number, priorityValue: number, baseValue: number | null): number {
   const base = baseValue ?? context.config.payments.basePriceMultiplier;
   const priority = priorityValue / 10; // floats cause bad math
   return 1000 * base * timeValue * priority;

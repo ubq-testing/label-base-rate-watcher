@@ -61,7 +61,6 @@ export const UBIQUITY = "ubiquity";
 export const USER_2 = "user2";
 export const TEST_REPO = "test-repo";
 export const SHA_1 = "1234";
-export const CHANGES_IN_COMMITS = "Changes in the commits:";
 export const CONFIG_CHANGED_IN_COMMIT = ".github/ubiquibot-config.yml was modified or added in the commits";
 export const CREATED_NEW_LABEL = "Created new price label";
 export const PUSHER_NOT_AUTHED = "Pusher is not an admin or billing manager";

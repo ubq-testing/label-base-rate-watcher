@@ -14,13 +14,6 @@ export interface PluginInputs<T extends SupportedEventsU = SupportedEventsU, TU 
 export const DEFAULT_TIME = ["Time: <1 Hour", "Time: <2 Hours", "Time: <4 Hours", "Time: <1 Day", "Time: <1 Week"];
 export const DEFAULT_PRIORITY = ["Priority: 1 (Normal)", "Priority: 2 (Medium)", "Priority: 3 (High)", "Priority: 4 (Urgent)", "Priority: 5 (Emergency)"];
 
-/**
- * This should contain the properties of the bot config
- * that are required for the plugin to function.
- *
- * The kernel will extract those and pass them to the plugin,
- * which are built into the context object from setup().
- */
 export const pluginSettingsSchema = T.Object({
   labels: T.Object({
     time: T.Array(T.String(), {

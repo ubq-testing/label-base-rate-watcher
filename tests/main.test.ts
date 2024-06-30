@@ -7,7 +7,6 @@ import { checkModifiedBaseRate, ZERO_SHA } from "../src/handlers/check-modified-
 import dotenv from "dotenv";
 import { Octokit } from "@octokit/rest";
 import {
-  CHANGES_IN_COMMITS,
   CONFIG_CHANGED_IN_COMMIT,
   CONFIG_PATH,
   priceMap,
@@ -77,8 +76,7 @@ describe("Label Base Rate Changes", () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenNthCalledWith(1, CHANGES_IN_COMMITS, [CONFIG_PATH]);
-    expect(infoSpy).toHaveBeenNthCalledWith(2, CONFIG_CHANGED_IN_COMMIT);
+    expect(infoSpy).toHaveBeenNthCalledWith(1, CONFIG_CHANGED_IN_COMMIT);
 
     expect(updatedRepo?.labels).toHaveLength(27);
     expect(updatedIssue?.labels).toHaveLength(3);
@@ -191,8 +189,7 @@ describe("Label Base Rate Changes", () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenNthCalledWith(1, CHANGES_IN_COMMITS, [CONFIG_PATH]);
-    expect(infoSpy).toHaveBeenNthCalledWith(2, CONFIG_CHANGED_IN_COMMIT);
+    expect(infoSpy).toHaveBeenNthCalledWith(1, CONFIG_CHANGED_IN_COMMIT);
 
     expect(updatedRepo?.labels).toHaveLength(27);
     expect(updatedIssue?.labels).toHaveLength(3);
@@ -255,8 +252,7 @@ describe("Label Base Rate Changes", () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenNthCalledWith(1, CHANGES_IN_COMMITS, [CONFIG_PATH]);
-    expect(infoSpy).toHaveBeenNthCalledWith(2, CONFIG_CHANGED_IN_COMMIT);
+    expect(infoSpy).toHaveBeenNthCalledWith(1, CONFIG_CHANGED_IN_COMMIT);
 
     expect(updatedRepo?.labels).toHaveLength(27);
     expect(updatedIssue?.labels).toHaveLength(3);
@@ -416,8 +412,7 @@ describe("Label Base Rate Changes", () => {
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenNthCalledWith(1, CHANGES_IN_COMMITS, [CONFIG_PATH]);
-    expect(infoSpy).toHaveBeenNthCalledWith(2, CONFIG_CHANGED_IN_COMMIT);
+    expect(infoSpy).toHaveBeenNthCalledWith(1, CONFIG_CHANGED_IN_COMMIT);
 
     expect(updatedRepo?.labels).toHaveLength(27);
     expect(updatedIssue?.labels).toHaveLength(3);
