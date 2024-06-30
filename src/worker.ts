@@ -1,6 +1,6 @@
 import { Value } from "@sinclair/typebox/value";
 import { runPlugin } from "./plugin";
-import { Env, envValidator, pluginSettingsSchema, pluginSettingsValidator } from "./types/plugin-input";
+import { DEFAULT_PRIORITY, DEFAULT_TIME, Env, envValidator, pluginSettingsSchema, pluginSettingsValidator } from "./types/plugin-input";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -21,6 +21,10 @@ export default {
 
       const webhookPayload = await request.json();
       const settings = Value.Decode(pluginSettingsSchema, Value.Default(pluginSettingsSchema, webhookPayload.settings));
+      if (settings.labels.time.length === 0 || settings.labels.priority.length === 0) {
+        settings.labels.time = DEFAULT_TIME;
+        settings.labels.priority = DEFAULT_PRIORITY;
+      }
 
       if (!pluginSettingsValidator.test(settings)) {
         const errors: string[] = [];
