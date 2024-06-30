@@ -7,20 +7,30 @@ import { Context } from "./types/context";
  * How a worker executes the plugin.
  */
 export async function plugin(context: Context) {
-  if (context.eventName !== "push") {
-    context.logger.warn("Unsupported event", { eventName: context.eventName });
+  const { eventName, payload, logger } = context;
+  if (eventName !== "push") {
+    logger.warn("Unsupported event", { eventName: eventName });
     return;
   }
 
-  const username = context.payload.sender?.login;
+  // who triggered the event
+  const sender = payload.sender?.login;
+  // who pushed the code
+  const pusher = payload.pusher?.name;
 
-  if (!username) {
-    context.logger.error("No username found in the payload");
+  if (!sender || !pusher) {
+    logger.error("Sender or pusher is missing");
     return;
   }
 
-  if (!(await isUserAdminOrBillingManager(context, username))) {
-    context.logger.error("User is not an admin or billing manager");
+  // we want these to be the same
+  if (sender !== pusher) {
+    logger.error("An update is only possible by the same user who pushed the code");
+    return;
+  }
+
+  if (!(await isUserAdminOrBillingManager(context, sender))) {
+    logger.error("User is not an admin or billing manager");
     return;
   }
 

@@ -389,6 +389,31 @@ describe("Label Base Rate Changes", () => {
     expect(pusher.name).toBe("billing");
     expect(sender_?.login).toBe("billing");
   });
+
+  it("Should not update if non-auth pushes the code and admin merges the PR", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const pusher = db.users.findFirst({ where: { id: { equals: 2 } } }) as unknown as Context["payload"]["sender"];
+    const commits = inMemoryCommits(SHA_1, false, true, true);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      withBaseRateChanges: true,
+      withPlugin: true,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1, pusher);
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    await plugin(context);
+    expect(errorSpy).toHaveBeenCalledWith("An update is only possible by the same user who pushed the code");
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(infoSpy).not.toHaveBeenCalled();
+  });
 });
 
 const authedUser = {
@@ -547,7 +572,7 @@ async function setupTests() {
   });
 }
 
-function createContext(sender: Context["payload"]["sender"], commits: Context["payload"]["commits"], before: string, after: string): Context {
+function createContext(sender: Context["payload"]["sender"], commits: Context["payload"]["commits"], before: string, after: string, pusher?: Context["payload"]["sender"]): Context {
   return {
     adapters: {} as never,
     env: {} as never,
@@ -587,11 +612,11 @@ function createContext(sender: Context["payload"]["sender"], commits: Context["p
         tree_id: SHA_1,
       },
       pusher: {
-        name: sender?.login as string,
+        name: pusher?.login ?? sender?.login as string,
         email: "...",
         date: new Date().toISOString(),
-        username: sender?.login as string,
-      } as unknown as Context["payload"]["pusher"],
+        username: pusher?.login ?? sender?.login as string,
+      }
     },
     logger: {
       info: console.info,
