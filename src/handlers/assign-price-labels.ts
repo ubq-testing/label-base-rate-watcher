@@ -17,7 +17,10 @@ export async function assignPriceLabels(
   newBaseRate: number,
   hasAssistivePricing: boolean
 ) {
-  if (!repoIssues) return;
+  if (!repoIssues) {
+    context.logger.info(`No issues found for ${owner}/${repo} with time and priority labels`);
+    return;
+  }
 
   for (const issue of repoIssues) {
     const labels = issue.labels.map((label) => {
@@ -36,11 +39,11 @@ export async function assignPriceLabels(
 
       if (!hasAssistivePricing && currentPrice && currentPrice !== targetPriceLabel) {
         await removeLabel(context, owner, repo, issue.number, currentPrice);
-        await addLabelToIssue(context, owner, repo, issue.number, targetPriceLabel);
+        await addLabelToIssue(context, owner, repo, issue.number, targetPriceLabel, currentPrice);
       }
 
       if (hasAssistivePricing) {
-        await addLabelToIssue(context, owner, repo, issue.number, targetPriceLabel);
+        await addLabelToIssue(context, owner, repo, issue.number, targetPriceLabel, currentPrice);
       }
     }
   }

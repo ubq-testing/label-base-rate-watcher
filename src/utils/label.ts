@@ -82,14 +82,14 @@ export async function createLabel(context: Context, owner: string, repo: string,
   }
 }
 
-export async function updateLabel(context: Context, owner: string, repo: string, targetPriceLabel: string, priceLabel: Label) {
+export async function updateLabel(context: Context, owner: string, repo: string, targetPriceLabel: string, priceLabel?: Label) {
   try {
     await context.octokit.issues.updateLabel({
       owner,
       repo,
-      name: priceLabel.name,
+      name: priceLabel?.name || "",
       new_name: targetPriceLabel,
-      color: priceLabel?.color || COLORS.price,
+      color: priceLabel?.color ?? COLORS["price"],
       description: priceLabel?.description || "",
       headers: {
         "X-GitHub-Api-Version": "2022-11-28",
@@ -113,7 +113,15 @@ export async function labelExists(context: Context, owner: string, repo: string,
   }
 }
 
-export async function addLabelToIssue(context: Context, owner: string, repo: string, issueNumber: number, labelName: string) {
+export async function addLabelToIssue(
+  context: Context,
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  labelName: string,
+  currentLabelName: string | undefined
+) {
+  context.logger.info("Adding label to issue", { owner, repo, issueNumber, labelName, currentLabelName });
   try {
     await context.octokit.issues.addLabels({
       owner,
