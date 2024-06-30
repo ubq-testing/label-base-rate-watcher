@@ -55,3 +55,54 @@ export const PRICE_LABELS = [
   { name: "Price: 800 USD", color: "1f883d" },
   { name: "Price: 1000 USD", color: "1f883d" },
 ];
+
+export const CONFIG_PATH = ".github/ubiquibot-config.yml";
+export const UBIQUITY = "ubiquity";
+export const USER_2 = "user2";
+export const TEST_REPO = "test-repo";
+export const SHA_1 = "1234";
+export const CHANGES_IN_COMMITS = "Changes in the commits:";
+export const CONFIG_CHANGED_IN_COMMIT = ".github/ubiquibot-config.yml was modified or added in the commits";
+export const CREATED_NEW_LABEL = "Created new price label";
+export const PUSHER_NOT_AUTHED = "Pusher is not an admin or billing manager";
+export const SENDER_NOT_AUTHED = "Sender is not an admin or billing manager";
+export const UBQ_EMAIL = "ubiquity@ubq";
+export const authedUser = {
+  email: UBQ_EMAIL,
+  name: UBIQUITY,
+  username: UBIQUITY,
+  date: new Date().toISOString(),
+};
+
+export const billingManager = {
+  email: "billing@ubq",
+  name: "billing",
+  username: "billing",
+  date: new Date().toISOString(),
+};
+
+export const unAuthedUser = {
+  email: "user2@ubq",
+  name: USER_2,
+  username: USER_2,
+  date: new Date().toISOString(),
+};
+export const priceMap: { [key: number]: number } = {
+  1: 12.5,
+  2: 25,
+  3: 37.5,
+  4: 50,
+  5: 62.5,
+  6: 75,
+  7: 100,
+  8: 125,
+  9: 150,
+  10: 200,
+  11: 250,
+  12: 300,
+  13: 400,
+  14: 500,
+  15: 600,
+  16: 800,
+  17: 1000,
+};
