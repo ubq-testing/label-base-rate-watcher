@@ -38,6 +38,7 @@ export async function updateBaseRate(context: Context) {
     if (!repo) continue;
     const labels = await listLabelsForRepo(logger, context.octokit, repo as Context["payload"]["repository"]);
     if (labels.length === 0) {
+      logger.info("No labels found for this repo", { repo });
       continue;
     }
     await updateLabelsFromBaseRate(context, repo.owner.login, repo.name, labels, rates);
@@ -61,25 +62,18 @@ async function updateLabelsFromBaseRate(context: Context, owner: string, repo: s
     },
   } = context;
   const { previousBaseRate, newBaseRate } = rates;
-  const timeLabels = labels.filter((label) => label.name.includes("Time:"));
-  const priorityLabels = labels.filter((label) => label.name.includes("Priority:"));
-  let priceLabels: Label[] | null = labels.filter((label) => label.name.includes("Price:"));
-
-  if (!timeLabels || !priorityLabels) {
-    return;
-  }
+  const timeLabels = labels.filter((label) => label.name.startsWith("Time:"));
+  const priorityLabels = labels.filter((label) => label.name.startsWith("Priority:"));
+  let priceLabels: Label[] | null = labels.filter((label) => label.name.startsWith("Price:"));
 
   if (!newBaseRate) {
+    logger.error("No new base rate found in the diff");
     return;
   }
 
   const uniqueTimeLabels = [...new Set(timeLabels.map((label) => label.name).concat(time))];
   const uniquePriorityLabels = [...new Set(priorityLabels.map((label) => label.name).concat(priority))];
   const repoIssues: Awaited<ReturnType<typeof fetchIssuesWithTandP>> | null = await fetchIssuesWithTandP(context, owner, repo);
-
-  if (!repoIssues.length) {
-    return;
-  }
 
   if (hasAssistivePricing) {
     await deleteAllPriceLabels(context, owner, repo, priceLabels);
