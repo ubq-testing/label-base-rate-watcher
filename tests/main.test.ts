@@ -5,7 +5,7 @@ import { server } from "./__mocks__/node";
 import usersGet from "./__mocks__/users-get.json";
 import { it, describe, beforeAll, beforeEach, afterAll, expect, afterEach, jest } from "@jest/globals";
 import issueTemplate from "./__mocks__/issue-template";
-import { checkModifiedBaseRate } from "../src/handlers/check-modified-base-rate";
+import { checkModifiedBaseRate, ZERO_SHA } from "../src/handlers/check-modified-base-rate";
 import dotenv from "dotenv";
 import { Octokit } from "@octokit/rest";
 import { PRICE_LABELS, PRIORITY_LABELS, TIME_LABELS } from "./__mocks__/constants";
@@ -303,6 +303,33 @@ describe("Label Base Rate Changes", () => {
     const noTandP = db.issue.findFirst({ where: { id: { equals: 2 } } });
     expect(noTandP?.labels).toHaveLength(0);
   });
+
+  it("Should not update base rate if a new branch was created", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const commits = inMemoryCommits(SHA_1);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      isAuthed: true,
+      withBaseRateChanges: true,
+      withPlugin: false,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, ZERO_SHA, "1235")
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    await plugin(context);
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledTimes(1);
+
+    expect(infoSpy).toHaveBeenCalledWith("Skipping push events. A new branch was created");
+  });
 });
 
 const authedUser = {
@@ -328,20 +355,18 @@ index f7f8053..cad1340 100644
 @@ -7,7 +7,7 @@ features:
      setLabel: true
      fundExternalClosedIssue: true
-${
-  withChanges
-    ? `
+${withChanges
+      ? `
 payments: 
 -  basePriceMultiplier: 1
 +  basePriceMultiplier: ${changeAmt}`
-    : ""
-}
+      : ""
+    }
  timers: 
    reviewDelayTolerance: 86400000
    taskStaleTimeoutDuration: 2419200000
-${
-  withPlugin
-    ? `
+${withPlugin
+      ? `
   with: 
     labels:
       time: []
@@ -355,8 +380,8 @@ ${
         setLabel: true
       assistivePricing: true
 `
-    : ""
-}
+      : ""
+    }
 `;
 }
 
