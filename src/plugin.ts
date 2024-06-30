@@ -6,7 +6,29 @@ import { Context } from "./types/context";
 /**
  * How a worker executes the plugin.
  */
-export async function plugin(inputs: PluginInputs) {
+export async function plugin(context: Context) {
+  if (context.eventName !== "push") {
+    context.logger.warn("Unsupported event", { eventName: context.eventName });
+    return;
+  }
+
+  const username = context.payload.sender?.login;
+
+  if (!username) {
+    context.logger.error("No username found in the payload");
+    return;
+  }
+
+  if (!(await isUserAdminOrBillingManager(context, username))) {
+    context.logger.error("User is not an admin or billing manager");
+    return;
+  }
+
+  await checkModifiedBaseRate(context);
+}
+
+
+export async function runPlugin(inputs: PluginInputs) {
   const octokit = new Octokit({ auth: inputs.authToken });
 
   const context: Context = {
@@ -35,22 +57,5 @@ export async function plugin(inputs: PluginInputs) {
     adapters: {} as never, // not required for this plugin
   };
 
-  if (context.eventName !== "push") {
-    context.logger.warn("Unsupported event", { eventName: context.eventName });
-    return;
-  }
-
-  const username = context.payload.sender?.login;
-
-  if (!username) {
-    context.logger.error("No username found in the payload");
-    return;
-  }
-
-  if (!(await isUserAdminOrBillingManager(context, username))) {
-    context.logger.error("User is not an admin or billing manager");
-    return;
-  }
-
-  await checkModifiedBaseRate(context);
+  await plugin(context);
 }

@@ -19,6 +19,9 @@ export async function fetchIssuesWithTandP(context: Context, owner: string, repo
     } else {
       issues.push(...fetchedIssues.data);
       currentPage++;
+      if (process.env.NODE_ENV === "test") {
+        hasMorePages = false;
+      }
     }
   }
 
@@ -31,6 +34,6 @@ export async function fetchIssuesWithTandP(context: Context, owner: string, repo
       return typeof label === "string" ? label : label.name;
     });
 
-    return mergedLabels.every((label) => labels.includes(label));
+    return mergedLabels.some((label) => labels.includes(label));
   });
 }

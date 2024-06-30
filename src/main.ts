@@ -2,7 +2,7 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { Octokit } from "@octokit/rest";
 import { Value } from "@sinclair/typebox/build/cjs/value";
-import { plugin } from "./plugin";
+import { runPlugin } from "./plugin";
 import { PluginInputs, pluginSettingsSchema, pluginSettingsValidator } from "./types/plugin-input";
 /**
  * How a GitHub action executes the plugin.
@@ -25,7 +25,7 @@ export async function run() {
     ref: payload.ref,
   };
 
-  await plugin(inputs);
+  await runPlugin(inputs);
 
   return returnDataToKernel(inputs.authToken, inputs.stateId, {});
 }

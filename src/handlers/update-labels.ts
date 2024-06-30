@@ -34,16 +34,18 @@ export async function updateLabels(
   const targetPriceLabel = `Price: ${targetPrice} USD`;
 
   // The actual price label
-  const priceLabel = priceLabels?.find((label) => label?.name === currentPriceTargetLabel);
+  const priceLabel = priceLabels?.find((label) => label?.name.includes("Price:"));
+
+  const isPrevious = priceLabel?.name === currentPriceTargetLabel;
 
   // Check if the current price label is different from the target price label
-  if (priceLabel && priceLabel.name !== targetPriceLabel) {
+  if (priceLabel && !isPrevious) {
     // If the target price label does not exist, update the current label to the new price
     if (!(await labelExists(context, owner, repo, targetPriceLabel))) {
       await updateLabel(context, owner, repo, targetPriceLabel, priceLabel);
       logger.info("Updated price label to new target price", { targetPriceLabel });
     }
-  } else {
+  } else if (!priceLabel) {
     // If the price label doesn't exist, check if the target price label exists
     if (!(await labelExists(context, owner, repo, targetPriceLabel))) {
       // If it doesn't exist, create it

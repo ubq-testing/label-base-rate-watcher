@@ -21,7 +21,7 @@ export interface PluginInputs<T extends SupportedEventsU = SupportedEventsU, TU 
 export const pluginSettingsSchema = T.Object({
   labels: T.Object({
     time: T.Array(T.String(), {
-      default: ["Time: <1 Hour", "Time: <2 Hours", "Time: <4 Hours", "Time: <1 Day", "Time: <1 Week", "Time: <2 Weeks"],
+      default: ["Time: <1 Hour", "Time: <2 Hours", "Time: <4 Hours", "Time: <1 Day", "Time: <1 Week"],
     }),
     priority: T.Array(T.String(), {
       default: ["Priority: 1 (Normal)", "Priority: 2 (Medium)", "Priority: 3 (High)", "Priority: 4 (Urgent)", "Priority: 5 (Emergency)"],
