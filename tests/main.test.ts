@@ -139,6 +139,24 @@ describe("Label Base Rate Changes", () => {
     expect(warnSpy).not.toHaveBeenCalled();
     expect(infoSpy).toHaveBeenCalledTimes(19);
   })
+
+  it("Should not update base rate if there are no changes", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const commits = commitCreator(true, false);
+    const context = createContext(sender, commits);
+    const infoSpy = jest.spyOn(context.logger, "info");
+
+    const repo = db.repo.findFirst({ where: { id: { equals: 1 } } });
+    const issue1 = db.issue.findFirst({ where: { id: { equals: 1 } } });
+    const issue2 = db.issue.findFirst({ where: { id: { equals: 3 } } });
+
+    expect(repo?.labels).toHaveLength(29);
+    expect(issue1?.labels).toHaveLength(3);
+    expect(issue2?.labels).toHaveLength(2);
+
+    await plugin(context)
+    expect(infoSpy).toHaveBeenCalledWith("No files were changed in the commits, so no action is required.");
+  })
 });
 
 const authedUser = {
