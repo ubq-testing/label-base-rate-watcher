@@ -69,7 +69,6 @@ export const handlers = [
   }),
   // remove label
   http.delete("https://api.github.com/repos/:owner/:repo/issues/:issueNumber/labels/:name", async ({ params: { owner, repo, issueNumber, name } }) => {
-    console.log("BACKEND REMOVE: ", { owner, repo, issueNumber, name })
     const updatedIssue = db.issue.findFirst({ where: { id: { equals: Number(issueNumber) } } });
     const foundLabel = updatedIssue?.labels.find((label) => (label as Label).name === name);
 

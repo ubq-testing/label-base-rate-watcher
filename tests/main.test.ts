@@ -16,6 +16,11 @@ dotenv.config();
 jest.requireActual('@octokit/rest')
 
 const octokit = new Octokit();
+const CONFIG_PATH = ".github/ubiquibot-config.yml";
+const UBIQUITY = "ubiquity";
+const USER_2 = "user2";
+const TEST_REPO = "test-repo";
+const SHA_1 = "1234";
 
 beforeAll(() => {
   server.listen();
@@ -23,6 +28,7 @@ beforeAll(() => {
 afterEach(() => {
   drop(db);
   server.resetHandlers();
+  jest.clearAllMocks();
 });
 afterAll(() => server.close());
 
@@ -51,10 +57,22 @@ describe("Label Base Rate Changes", () => {
     17: 1000,
   }
 
+
   it("Should change the base rate of all price labels", async () => {
     const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
-    const commits = commitCreator();
-    const context = createContext(sender, commits);
+    const commits = inMemoryCommits(SHA_1);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      isAuthed: true,
+      withBaseRateChanges: true,
+      withPlugin: false,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1);
     const infoSpy = jest.spyOn(context.logger, "info");
     const warnSpy = jest.spyOn(context.logger, "warn");
     const errorSpy = jest.spyOn(context.logger, "error");
@@ -76,7 +94,7 @@ describe("Label Base Rate Changes", () => {
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
     expect(infoSpy).toHaveBeenCalledTimes(19);
-    expect(infoSpy).toHaveBeenNthCalledWith(1, "Changes in the commits:", [".github/ubiquibot-config.yml"]);
+    expect(infoSpy).toHaveBeenNthCalledWith(1, "Changes in the commits:", [CONFIG_PATH]);
     expect(infoSpy).toHaveBeenNthCalledWith(2, ".github/ubiquibot-config.yml was modified or added in the commits");
 
     for (let i = 1; i <= 17; i++) {
@@ -102,8 +120,19 @@ describe("Label Base Rate Changes", () => {
 
   it("Should not update base rate if the user is not authenticated", async () => {
     const sender = db.users.findFirst({ where: { id: { equals: 2 } } }) as unknown as Context["payload"]["sender"];
-    const commits = commitCreator(false);
-    const context = createContext(sender, commits);
+    const commits = inMemoryCommits(SHA_1, false);
+    createDBCommit({
+      owner: USER_2,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      isAuthed: false,
+      withBaseRateChanges: true,
+      withPlugin: false,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1);
     const errorSpy = jest.spyOn(context.logger, "error");
 
     const repo = db.repo.findFirst({ where: { id: { equals: 1 } } });
@@ -120,8 +149,19 @@ describe("Label Base Rate Changes", () => {
 
   it("Should update base rate if the user is authenticated", async () => {
     const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
-    const commits = commitCreator();
-    const context = createContext(sender, commits);
+    const commits = inMemoryCommits(SHA_1);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      isAuthed: true,
+      withBaseRateChanges: true,
+      withPlugin: false,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1);
     const infoSpy = jest.spyOn(context.logger, "info");
     const warnSpy = jest.spyOn(context.logger, "warn");
     const errorSpy = jest.spyOn(context.logger, "error");
@@ -142,8 +182,19 @@ describe("Label Base Rate Changes", () => {
 
   it("Should not update base rate if there are no changes", async () => {
     const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
-    const commits = commitCreator(true, false);
-    const context = createContext(sender, commits);
+    const commits = inMemoryCommits(SHA_1, true, false);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [],
+      added: [],
+      isAuthed: true,
+      withBaseRateChanges: false,
+      withPlugin: false,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1);
     const infoSpy = jest.spyOn(context.logger, "info");
 
     const repo = db.repo.findFirst({ where: { id: { equals: 1 } } });
@@ -157,23 +208,56 @@ describe("Label Base Rate Changes", () => {
     await plugin(context)
     expect(infoSpy).toHaveBeenCalledWith("No files were changed in the commits, so no action is required.");
   })
+
+  it("Should update base rate if there are changes in the plugin config", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const commits = inMemoryCommits("1234", true, true);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: "1234",
+      modified: [CONFIG_PATH],
+      added: [],
+      isAuthed: true,
+      withBaseRateChanges: false,
+      withPlugin: true,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, "1234", "1234");
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    const repo = db.repo.findFirst({ where: { id: { equals: 1 } } });
+    const issue1 = db.issue.findFirst({ where: { id: { equals: 1 } } });
+    const issue2 = db.issue.findFirst({ where: { id: { equals: 3 } } });
+
+    expect(repo?.labels).toHaveLength(29);
+    expect(issue1?.labels).toHaveLength(3);
+    expect(issue2?.labels).toHaveLength(2);
+
+    await plugin(context)
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledTimes(19);
+  });
 });
 
 const authedUser = {
   email: "ubiquity@ubq",
-  name: "ubiquity",
-  username: "ubiquity",
+  name: UBIQUITY,
+  username: UBIQUITY,
   date: new Date().toISOString(),
 };
 
 const unAuthedUser = {
   email: "user2@ubq",
-  name: "user2",
-  username: "user2",
+  name: USER_2,
+  username: USER_2,
   date: new Date().toISOString(),
 };
 
-function getBaseRateChanges(changeAmt: number, withChanges = true) {
+function getBaseRateChanges(changeAmt: number, withChanges = true, withPlugin = false) {
   return `
 diff --git a/.github/.ubiquibot-config.yml b/.github/.ubiquibot-config.yml
 index f7f8053..cad1340 100644
@@ -184,44 +268,97 @@ index f7f8053..cad1340 100644
      fundExternalClosedIssue: true
 ${withChanges ? `
 payments: 
--  basePriceMultiplier: 2
+-  basePriceMultiplier: 1
 +  basePriceMultiplier: ${changeAmt}` : ""}
  timers: 
    reviewDelayTolerance: 86400000
    taskStaleTimeoutDuration: 2419200000
+${withPlugin ? `
+  with: 
+    labels:
+      time: []
+      priority: []
+-    payments: 
+-      basePriceMultiplier: 1
++    payments:
++      basePriceMultiplier: ${changeAmt * 2}
+    features:
+      publicAccessControl: 
+        setLabel: true
+      assistivePricing: true
+` : ""}
 `;
 }
 
-function commitCreator(isAuthed = true, withBaseRateChanges = true): Context["payload"]["commits"] {
+function inMemoryCommits(id: string, isAuthed = true, withBaseRateChanges = true): Context["payload"]["commits"] {
   return [
     {
       author: isAuthed ? authedUser : unAuthedUser,
       committer: isAuthed ? authedUser : unAuthedUser,
-      id: "1234",
+      id: id,
       message: "chore: update base rate",
       timestamp: new Date().toISOString(),
-      tree_id: "1234",
+      tree_id: id,
       url: "",
       added: [],
-      modified: withBaseRateChanges ? [".github/ubiquibot-config.yml"] : [],
+      modified: withBaseRateChanges ? [CONFIG_PATH] : [],
       removed: [],
       distinct: true,
     }
   ]
 }
 
-function getCommitChanges(isAuthed = true, withBaseRateChanges = true, amount = 5): string {
+function getCommitChanges(isAuthed = true, withBaseRateChanges = true, amount = 5, withPlugin = false): string {
+  if (withPlugin) {
+    return getBaseRateChanges(amount, false, withPlugin);
+  }
   if (isAuthed && withBaseRateChanges) {
     return getBaseRateChanges(amount);
   }
   if (isAuthed && !withBaseRateChanges) {
-    return getBaseRateChanges(0, false)
+    return getBaseRateChanges(0, withBaseRateChanges)
   }
   if (!isAuthed) {
     return getBaseRateChanges(amount);
   }
-
   return "";
+}
+
+function createDBCommit({
+  owner,
+  repo,
+  sha,
+  modified,
+  added,
+  isAuthed,
+  withBaseRateChanges,
+  withPlugin,
+  amount,
+}: {
+  owner: string,
+  repo: string,
+  sha: string,
+  modified: string[],
+  added: string[],
+  isAuthed: boolean,
+  withBaseRateChanges: boolean,
+  withPlugin: boolean,
+  amount: number,
+}) {
+  if (db.commit.findFirst({ where: { sha: { equals: sha } } })) {
+    db.commit.delete({ where: { sha: { equals: sha } } });
+  }
+  db.commit.create({
+    id: 1,
+    owner: {
+      login: owner,
+    },
+    repo,
+    sha,
+    modified,
+    added,
+    data: getCommitChanges(isAuthed, withBaseRateChanges, amount, withPlugin),
+  });
 }
 
 async function setupTests() {
@@ -229,48 +366,12 @@ async function setupTests() {
     db.users.create(item);
   }
 
-  db.commit.create({
-    id: 1,
-    owner: {
-      login: "ubiquity",
-    },
-    repo: "test-repo",
-    sha: "1234",
-    modified: [".github/ubiquibot-config.yml"],
-    added: [],
-    data: getCommitChanges(),
-  });
-
-  db.commit.create({
-    id: 2,
-    owner: {
-      login: "ubiquity",
-    },
-    repo: "test-repo",
-    sha: "1235",
-    modified: [],
-    added: [],
-    data: getCommitChanges(true, false),
-  });
-
-  db.commit.create({
-    id: 3,
-    owner: {
-      login: "user2",
-    },
-    repo: "test-repo",
-    sha: "1236",
-    modified: [".github/ubiquibot-config.yml"],
-    added: [],
-    data: getCommitChanges(false, true, 100),
-  });
-
   db.repo.create({
     id: 1,
     html_url: "",
-    name: "test-repo",
+    name: TEST_REPO,
     owner: {
-      login: "ubiquity",
+      login: UBIQUITY,
       id: 1,
     },
     issues: [],
@@ -307,7 +408,7 @@ async function setupTests() {
   });
 }
 
-function createContext(sender: Context["payload"]["sender"], commits: Context["payload"]["commits"]): Context {
+function createContext(sender: Context["payload"]["sender"], commits: Context["payload"]["commits"], before: string, after: string): Context {
   return {
     adapters: {} as never,
     env: {} as never,
@@ -315,9 +416,9 @@ function createContext(sender: Context["payload"]["sender"], commits: Context["p
       sender: sender as unknown as Context["payload"]["sender"],
       repository: db.repo.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["repository"],
       installation: { id: 1 } as unknown as Context["payload"]["installation"],
-      organization: { login: "ubiquity" } as unknown as Context["payload"]["organization"],
-      after: "1234",
-      before: "1233",
+      organization: { login: UBIQUITY } as unknown as Context["payload"]["organization"],
+      after,
+      before,
       base_ref: "refs/heads/main",
       ref: "refs/heads/main",
       commits,
@@ -326,25 +427,25 @@ function createContext(sender: Context["payload"]["sender"], commits: Context["p
       deleted: false,
       forced: false,
       head_commit: {
-        id: "1234",
+        id: SHA_1,
         message: "feat: add base rate",
         timestamp: new Date().toISOString(),
         url: "",
         author: {
           email: "ubiquity@ubq",
-          name: "ubiquity",
-          username: "ubiquity",
+          name: UBIQUITY,
+          username: UBIQUITY,
         },
         committer: {
           email: "ubiquity@ubq",
-          name: "ubiquity",
-          username: "ubiquity",
+          name: UBIQUITY,
+          username: UBIQUITY,
         },
-        added: [".github/ubiquibot-config.yml"],
+        added: [CONFIG_PATH],
         modified: [],
         removed: [],
         distinct: true,
-        tree_id: "1234",
+        tree_id: SHA_1,
       },
       pusher: { name: sender?.login as string, email: "...", date: new Date().toISOString(), username: sender?.login as string } as unknown as Context["payload"]["pusher"],
     },
