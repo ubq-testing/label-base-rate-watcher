@@ -21,8 +21,11 @@ export default {
 
       const webhookPayload = await request.json();
       const settings = Value.Decode(pluginSettingsSchema, Value.Default(pluginSettingsSchema, webhookPayload.settings));
-      if (settings.labels.time.length === 0 || settings.labels.priority.length === 0) {
+      if (settings.labels.time.length === 0) {
         settings.labels.time = DEFAULT_TIME;
+      }
+
+      if (settings.labels.priority.length === 0) {
         settings.labels.priority = DEFAULT_PRIORITY;
       }
 
