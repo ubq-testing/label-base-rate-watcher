@@ -27,7 +27,6 @@ export async function plugin(context: Context) {
   await checkModifiedBaseRate(context);
 }
 
-
 export async function runPlugin(inputs: PluginInputs) {
   const octokit = new Octokit({ auth: inputs.authToken });
 

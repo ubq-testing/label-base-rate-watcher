@@ -86,6 +86,6 @@ export const db = factory({
     sha: String,
     modified: Array,
     added: Array,
-    data: String
-  }
+    data: String,
+  },
 });

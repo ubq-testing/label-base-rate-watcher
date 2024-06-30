@@ -19,9 +19,7 @@ export const handlers = [
   }),
   // get issue
   http.get("https://api.github.com/repos/:owner/:repo/issues", ({ params: { owner, repo } }: { params: { owner: string; repo: string } }) => {
-    return HttpResponse.json(
-      db.issue.findMany({ where: { owner: { equals: owner as string }, repo: { equals: repo as string } } })
-    );
+    return HttpResponse.json(db.issue.findMany({ where: { owner: { equals: owner as string }, repo: { equals: repo as string } } }));
   }),
   // create issue
   http.post("https://api.github.com/repos/:owner/:repo/issues", () => {
@@ -35,33 +33,36 @@ export const handlers = [
     return HttpResponse.json(db.repo.findMany({ where: { owner: { login: { equals: org } } } }));
   }),
   // issues list for repo
-  http.get("https://api.github.com/repos/:owner/:repo/issues", (() => {
-    let callCount = 0; // Encapsulate callCount within the closure
+  http.get(
+    "https://api.github.com/repos/:owner/:repo/issues",
+    (() => {
+      let callCount = 0; // Encapsulate callCount within the closure
 
-    return ({ params: { owner, repo } }) => {
-      if (callCount === 0) {
-        callCount++;
-        // Return the issues for the first call
-        return HttpResponse.json(db.issue.findMany({ where: { owner: { equals: owner as string }, repo: { equals: repo as string } } }));
-      }
-      // Return an empty array for subsequent calls
-      return HttpResponse.json([]);
-    };
-  })()),
+      return ({ params: { owner, repo } }) => {
+        if (callCount === 0) {
+          callCount++;
+          // Return the issues for the first call
+          return HttpResponse.json(db.issue.findMany({ where: { owner: { equals: owner as string }, repo: { equals: repo as string } } }));
+        }
+        // Return an empty array for subsequent calls
+        return HttpResponse.json([]);
+      };
+    })()
+  ),
   // delete label
   http.delete("https://api.github.com/repos/:owner/:repo/labels/:name", ({ params: { owner, repo, name } }) => {
     const currentRepo = db.repo.findFirst({ where: { name: { equals: repo as string } } });
     const labels = currentRepo?.labels.filter((label) => (label as Label).name !== name) || [];
     db.repo.update({
       where: { name: { equals: repo as string } },
-      data: { labels: labels as any }
+      data: { labels: labels as any },
     });
 
     const issues = db.issue.findMany({ where: { owner: { equals: owner as string }, repo: { equals: repo as string } } });
     issues.forEach((issue) => {
       db.issue.update({
         where: { id: { equals: issue.id } },
-        data: { labels: issue.labels.filter((label) => (label as Label).name !== name) } as any
+        data: { labels: issue.labels.filter((label) => (label as Label).name !== name) } as any,
       });
     });
 
@@ -79,7 +80,7 @@ export const handlers = [
     updatedIssue.labels = updatedIssue.labels.filter((label) => (label as Label).name !== name);
     db.issue.update({
       where: { id: { equals: issueNumber as unknown as number } },
-      data: { labels: updatedIssue.labels } as any
+      data: { labels: updatedIssue.labels } as any,
     });
 
     return HttpResponse.json({});
@@ -105,14 +106,16 @@ export const handlers = [
     const newLabel = await getLabel(body);
     db.repo.update({
       where: { name: { equals: repo as string } },
-      data: { labels: [...db.repo.findFirst({ where: { name: { equals: repo as string } } })?.labels as [], newLabel] } as any
+      data: { labels: [...(db.repo.findFirst({ where: { name: { equals: repo as string } } })?.labels as []), newLabel] } as any,
     });
 
     return HttpResponse.json(newLabel);
   }),
   // get commit
   http.get("https://api.github.com/repos/:owner/:repo/commits/:sha", ({ params: { owner, repo, sha } }) => {
-    const changes = db.commit.findFirst({ where: { owner: { login: { equals: owner as string } }, repo: { equals: repo as string }, sha: { equals: sha as string } } });
+    const changes = db.commit.findFirst({
+      where: { owner: { login: { equals: owner as string } }, repo: { equals: repo as string }, sha: { equals: sha as string } },
+    });
     if (!changes) {
       return new HttpResponse(null, { status: 404 });
     }
@@ -124,7 +127,7 @@ export const handlers = [
     const newLabel = { name: labels[0] };
     db.issue.update({
       where: { id: { equals: Number(issueNumber) } },
-      data: { labels: [...db.issue.findFirst({ where: { id: { equals: Number(issueNumber) } } })?.labels as [], newLabel] } as any
+      data: { labels: [...(db.issue.findFirst({ where: { id: { equals: Number(issueNumber) } } })?.labels as []), newLabel] } as any,
     });
 
     return HttpResponse.json(newLabel);
@@ -139,7 +142,7 @@ export const handlers = [
     currentLabels[index] = updatedLabel;
     db.repo.update({
       where: { name: { equals: repo as string } },
-      data: { labels: (currentLabels as any).labels } as any
+      data: { labels: (currentLabels as any).labels } as any,
     });
     return HttpResponse.json(labels);
   }),
@@ -158,7 +161,7 @@ export const handlers = [
     }
 
     return HttpResponse.json({ role: "member" });
-  })
+  }),
 ];
 
 async function getLabel(body: ReadableStream<Uint8Array> | null) {
