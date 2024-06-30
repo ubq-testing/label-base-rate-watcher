@@ -8,6 +8,7 @@ export const db = factory({
   users: {
     id: primaryKey(Number),
     name: String,
+    login: String,
   },
   issue: {
     id: primaryKey(Number),
@@ -85,5 +86,6 @@ export const db = factory({
     sha: String,
     modified: Array,
     added: Array,
+    data: String
   }
 });
