@@ -143,7 +143,6 @@ describe("Label Base Rate Changes", () => {
     await plugin(context);
     expect(errorSpy).toHaveBeenNthCalledWith(1, "Pusher is not an admin or billing manager");
     expect(errorSpy).toHaveBeenNthCalledWith(2, "Sender is not an admin or billing manager");
-
   });
 
   it("Should update base rate if the user is authenticated", async () => {
@@ -413,9 +412,137 @@ describe("Label Base Rate Changes", () => {
 
     await plugin(context);
     expect(errorSpy).toHaveBeenNthCalledWith(1, "Pusher is not an admin or billing manager");
-    expect(warnSpy).toHaveBeenCalledWith("Changes should be pushed by and triggered by an admin or billing manager.");
+    expect(warnSpy).toHaveBeenCalledWith("Changes should be pushed and triggered by an admin or billing manager.");
     expect(infoSpy).not.toHaveBeenCalled();
   });
+
+  it("Should not update if non-auth pushes the code and billing manager merges the PR", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const pusher = db.users.findFirst({ where: { id: { equals: 3 } } }) as unknown as Context["payload"]["sender"];
+    const commits = inMemoryCommits(SHA_1, false, true, true);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      withBaseRateChanges: true,
+      withPlugin: true,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1, pusher);
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    await plugin(context);
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledTimes(19);
+  });
+
+  it("Should not update if auth pushes the code and non-auth merges the PR", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const pusher = db.users.findFirst({ where: { id: { equals: 2 } } }) as unknown as Context["payload"]["sender"];
+    const commits = inMemoryCommits(SHA_1, true, true, true);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      withBaseRateChanges: true,
+      withPlugin: true,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1, pusher);
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    await plugin(context);
+    expect(errorSpy).toHaveBeenNthCalledWith(1, "Pusher is not an admin or billing manager");
+    expect(warnSpy).toHaveBeenCalledWith("Changes should be pushed and triggered by an admin or billing manager.");
+    expect(infoSpy).not.toHaveBeenCalled();
+  });
+
+  it("Should not update if auth pushes the code and admin merges the PR", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const pusher = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const commits = inMemoryCommits(SHA_1, true, true, true);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      withBaseRateChanges: true,
+      withPlugin: true,
+      amount: 5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1, pusher);
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    await plugin(context);
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledTimes(19);
+  });
+
+  it("Should update if auth pushes the code and billing manager merges the PR", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const pusher = db.users.findFirst({ where: { id: { equals: 3 } } }) as unknown as Context["payload"]["sender"];
+    const commits = inMemoryCommits(SHA_1, true, true, true);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      withBaseRateChanges: true,
+      withPlugin: true,
+      amount: 8.5,
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1, pusher);
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    await plugin(context);
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    const updatedRepo = db.repo.findFirst({ where: { id: { equals: 1 } } });
+    const updatedIssue = db.issue.findFirst({ where: { id: { equals: 1 } } });
+    const updatedIssue2 = db.issue.findFirst({ where: { id: { equals: 3 } } });
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledTimes(19);
+    expect(infoSpy).toHaveBeenNthCalledWith(1, "Changes in the commits:", [CONFIG_PATH]);
+    expect(infoSpy).toHaveBeenNthCalledWith(2, ".github/ubiquibot-config.yml was modified or added in the commits");
+
+    for (let i = 1; i <= 17; i++) {
+      expect(infoSpy).toHaveBeenNthCalledWith(i + 2, "Created new price label", { targetPriceLabel: `Price: ${priceMap[i] * 8.5} USD` });
+    }
+
+    expect(updatedRepo?.labels).toHaveLength(27);
+    expect(updatedIssue?.labels).toHaveLength(3);
+    expect(updatedIssue2?.labels).toHaveLength(3);
+
+    const priceLabels = updatedIssue?.labels.filter((label) => (label as Label).name.includes("Price:"));
+    const priceLabels2 = updatedIssue2?.labels.filter((label) => (label as Label).name.includes("Price:"));
+
+    expect(priceLabels).toHaveLength(1);
+    expect(priceLabels2).toHaveLength(1);
+
+    expect(priceLabels?.map((label) => (label as Label).name)).toContain(`Price: ${priceMap[1] * 8.5} USD`);
+    expect(priceLabels2?.map((label) => (label as Label).name)).toContain(`Price: ${priceMap[1] * 8.5} USD`);
+  });
+
 
 
 });
@@ -443,12 +570,12 @@ const unAuthedUser = {
 
 function getBaseRateChanges(changeAmt: number, withChanges = true, withPlugin = false) {
   return `
-diff --git a/.github/.ubiquibot-config.yml b/.github/.ubiquibot-config.yml
+diff--git a /.github /.ubiquibot - config.yml b /.github /.ubiquibot - config.yml
 index f7f8053..cad1340 100644
---- a/.github/.ubiquibot-config.yml
-+++ b/.github/.ubiquibot-config.yml
-@@ -7,7 +7,7 @@ features:
-     setLabel: true
+--- a /.github /.ubiquibot - config.yml
++++ b /.github /.ubiquibot - config.yml
+@@ - 7, 7 + 7, 7 @@features:
+        setLabel: true
      fundExternalClosedIssue: true
 ${withChanges
       ? `
@@ -457,9 +584,9 @@ payments:
 +  basePriceMultiplier: ${changeAmt}`
       : ""
     }
- timers: 
-   reviewDelayTolerance: 86400000
-   taskStaleTimeoutDuration: 2419200000
+    timers:
+    reviewDelayTolerance: 86400000
+    taskStaleTimeoutDuration: 2419200000
 ${withPlugin
       ? `
   with: 
@@ -477,7 +604,7 @@ ${withPlugin
 `
       : ""
     }
-`;
+    `;
 }
 
 function inMemoryCommits(id: string, isAuthed = true, withBaseRateChanges = true, isBilling = false): Context["payload"]["commits"] {
