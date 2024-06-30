@@ -117,6 +117,28 @@ describe("Label Base Rate Changes", () => {
     await plugin(context)
     expect(errorSpy).toHaveBeenCalledWith("User is not an admin or billing manager");
   })
+
+  it("Should update base rate if the user is authenticated", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 1 } } }) as unknown as Context["payload"]["sender"];
+    const commits = commitCreator();
+    const context = createContext(sender, commits);
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    const repo = db.repo.findFirst({ where: { id: { equals: 1 } } });
+    const issue1 = db.issue.findFirst({ where: { id: { equals: 1 } } });
+    const issue2 = db.issue.findFirst({ where: { id: { equals: 3 } } });
+
+    expect(repo?.labels).toHaveLength(29);
+    expect(issue1?.labels).toHaveLength(3);
+    expect(issue2?.labels).toHaveLength(2);
+
+    await plugin(context)
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledTimes(19);
+  })
 });
 
 const authedUser = {
