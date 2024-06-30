@@ -22,31 +22,24 @@ export async function isUserAdminOrBillingManager(context: Context, username: st
   const { name } = context.payload.repository;
   const owner = context.payload.organization;
 
-  let pusherAuthed;
-  let senderAuthed;
-
   const isPusherAdmin = await checkIfIsAdmin(context, name, pusher, owner?.login);
   const isSenderAdmin = await checkIfIsAdmin(context, name, username, owner?.login);
 
   const isSenderBillingManager = await checkIfIsBillingManager(owner?.login ?? "", username, context);
   const isPusherBillingManager = await checkIfIsBillingManager(owner?.login ?? "", pusher, context);
 
-  pusherAuthed = isPusherAdmin || isPusherBillingManager;
-  senderAuthed = isSenderAdmin || isSenderBillingManager;
+  const isPusherAuthed = isPusherAdmin || isPusherBillingManager;
+  const isSenderAuthed = isSenderAdmin || isSenderBillingManager;
 
-  if (!pusherAuthed) {
+  if (!isPusherAuthed) {
     context.logger.error("Pusher is not an admin or billing manager");
   }
 
-  if (!senderAuthed) {
+  if (!isSenderAuthed) {
     context.logger.error("Sender is not an admin or billing manager");
   }
 
-  if (pusherAuthed && senderAuthed) {
-    return true;
-  }
-
-  return false;
+  return (isPusherAuthed && isSenderAuthed) ?? false;
 }
 async function checkIfIsAdmin(context: Context, repo: string, username: string, owner?: string) {
   const response = await context.octokit.rest.repos.getCollaboratorPermissionLevel({

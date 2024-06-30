@@ -24,7 +24,7 @@ export async function plugin(context: Context) {
   }
 
   if (!(await isUserAdminOrBillingManager(context, sender, pusher))) {
-    logger.warn("Changes should be pushed and triggered by an admin or billing manager.")
+    logger.warn("Changes should be pushed and triggered by an admin or billing manager.");
     return;
   }
 

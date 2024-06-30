@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable sonarjs/no-duplicate-string */
 import { http, HttpResponse } from "msw";
 import { db } from "./db";
@@ -55,21 +54,21 @@ export const handlers = [
     const labels = currentRepo?.labels.filter((label) => (label as Label).name !== name) || [];
     db.repo.update({
       where: { name: { equals: repo as string } },
-      data: { labels: labels as any },
+      data: { labels: labels },
     });
 
     const issues = db.issue.findMany({ where: { owner: { equals: owner as string }, repo: { equals: repo as string } } });
     issues.forEach((issue) => {
       db.issue.update({
         where: { id: { equals: issue.id } },
-        data: { labels: issue.labels.filter((label) => (label as Label).name !== name) } as any,
+        data: { labels: issue.labels.filter((label) => (label as Label).name !== name) },
       });
     });
 
     return HttpResponse.json({});
   }),
   // remove label
-  http.delete("https://api.github.com/repos/:owner/:repo/issues/:issueNumber/labels/:name", async ({ params: { owner, repo, issueNumber, name } }) => {
+  http.delete("https://api.github.com/repos/:owner/:repo/issues/:issueNumber/labels/:name", async ({ params: { issueNumber, name } }) => {
     const updatedIssue = db.issue.findFirst({ where: { id: { equals: Number(issueNumber) } } });
     const foundLabel = updatedIssue?.labels.find((label) => (label as Label).name === name);
 
@@ -80,13 +79,13 @@ export const handlers = [
     updatedIssue.labels = updatedIssue.labels.filter((label) => (label as Label).name !== name);
     db.issue.update({
       where: { id: { equals: issueNumber as unknown as number } },
-      data: { labels: updatedIssue.labels } as any,
+      data: { labels: updatedIssue.labels },
     });
 
     return HttpResponse.json({});
   }),
   // get label
-  http.get("https://api.github.com/repos/:owner/:repo/labels/:name", ({ params: { owner, repo, name } }) => {
+  http.get("https://api.github.com/repos/:owner/:repo/labels/:name", ({ params: { repo, name } }) => {
     const item = db.repo.findFirst({ where: { name: { equals: repo as string } } })?.labels.find((label) => (label as Label).name === name);
     if (!item) {
       return new HttpResponse(null, { status: 404 });
@@ -94,7 +93,7 @@ export const handlers = [
     return HttpResponse.json(item);
   }),
   // get labels for repo
-  http.get("https://api.github.com/repos/:owner/:repo/labels", ({ params: { owner, repo } }) => {
+  http.get("https://api.github.com/repos/:owner/:repo/labels", ({ params: { repo } }) => {
     const labels = db.repo.findFirst({ where: { name: { equals: repo as string } } })?.labels;
     if (!labels) {
       return new HttpResponse(null, { status: 404 });
@@ -102,11 +101,11 @@ export const handlers = [
     return HttpResponse.json(labels);
   }),
   // create label
-  http.post("https://api.github.com/repos/:owner/:repo/labels", async ({ params: { owner, repo, name, color }, request: { body } }) => {
+  http.post("https://api.github.com/repos/:owner/:repo/labels", async ({ params: { repo }, request: { body } }) => {
     const newLabel = await getLabel(body);
     db.repo.update({
       where: { name: { equals: repo as string } },
-      data: { labels: [...(db.repo.findFirst({ where: { name: { equals: repo as string } } })?.labels as []), newLabel] } as any,
+      data: { labels: [...(db.repo.findFirst({ where: { name: { equals: repo as string } } })?.labels as []), newLabel] },
     });
 
     return HttpResponse.json(newLabel);
@@ -122,32 +121,32 @@ export const handlers = [
     return HttpResponse.json(changes.data);
   }),
   // add labels
-  http.post("https://api.github.com/repos/:owner/:repo/issues/:issueNumber/labels", async ({ params: { owner, repo, issueNumber }, request: { body } }) => {
-    let { labels } = await getLabel(body);
+  http.post("https://api.github.com/repos/:owner/:repo/issues/:issueNumber/labels", async ({ params: { issueNumber }, request: { body } }) => {
+    const { labels } = await getLabel(body);
     const newLabel = { name: labels[0] };
     db.issue.update({
       where: { id: { equals: Number(issueNumber) } },
-      data: { labels: [...(db.issue.findFirst({ where: { id: { equals: Number(issueNumber) } } })?.labels as []), newLabel] } as any,
+      data: { labels: [...(db.issue.findFirst({ where: { id: { equals: Number(issueNumber) } } })?.labels as []), newLabel] },
     });
 
     return HttpResponse.json(newLabel);
   }),
   // update label
-  http.patch("https://api.github.com/repos/:owner/:repo/labels/:name", async ({ params: { owner, repo, name }, request: { body } }) => {
-    let { labels } = await getLabel(body);
-    let updatedLabel = await getLabel(body);
+  http.patch("https://api.github.com/repos/:owner/:repo/labels/:name", async ({ params: { repo, name }, request: { body } }) => {
+    const { labels } = await getLabel(body);
+    const updatedLabel = await getLabel(body);
     const currentRepo = db.repo.findFirst({ where: { name: { equals: repo as string } } });
     const currentLabels = currentRepo?.labels || [];
     const index = currentLabels.findIndex((label) => (label as Label).name === name);
     currentLabels[index] = updatedLabel;
     db.repo.update({
       where: { name: { equals: repo as string } },
-      data: { labels: (currentLabels as any).labels } as any,
+      data: { labels: (currentLabels as unknown as { labels: Label[] }).labels },
     });
     return HttpResponse.json(labels);
   }),
   // get collaborator permission
-  http.get("https://api.github.com/repos/:owner/:repo/collaborators/:username/permission", ({ params: { owner, repo, username } }) => {
+  http.get("https://api.github.com/repos/:owner/:repo/collaborators/:username/permission", ({ params: { username } }) => {
     if (username === "ubiquity") {
       return HttpResponse.json({ permission: "admin" });
     }
@@ -155,7 +154,7 @@ export const handlers = [
     return HttpResponse.json({ permission: "read" });
   }),
   // get membership
-  http.get("https://api.github.com/orgs/:org/memberships/:username", ({ params: { org, username } }) => {
+  http.get("https://api.github.com/orgs/:org/memberships/:username", ({ params: { username } }) => {
     if (username === "ubiquity") {
       return HttpResponse.json({ role: "admin" });
     }
