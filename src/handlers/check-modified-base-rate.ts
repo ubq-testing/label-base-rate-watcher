@@ -16,6 +16,7 @@ export async function checkModifiedBaseRate(context: Context): Promise<void> {
 
   if (payload.before === ZERO_SHA) {
     logger.info("Skipping push events. A new branch was created");
+    return;
   }
 
   const changes = getCommitChanges(logger, payload.commits);

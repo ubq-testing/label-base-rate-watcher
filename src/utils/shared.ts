@@ -41,8 +41,8 @@ async function checkIfIsAdmin(context: Context, repo: string, username: string, 
 }
 
 async function checkIfIsBillingManager(org: string, username: string, context: Context) {
-  const { logger, octokit, payload } = context;
-  if (!payload.organization) throw logger.fatal(`No organization found in payload!`);
+  const { octokit, payload } = context;
+  if (!payload.organization) throw new Error(`No organization found in payload!`);
   const { data: membership } = await octokit.rest.orgs.getMembershipForUser({
     org,
     username,

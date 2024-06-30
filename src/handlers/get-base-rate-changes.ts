@@ -25,7 +25,7 @@ export async function getBaseRateChanges(context: Context, owner: string, repo: 
   }
 
   if (!commitData) {
-    throw logger.error("No commit data found");
+    throw new Error("No commit data found");
   }
 
   const data = commitData.data as unknown as string;

@@ -19,19 +19,19 @@ export async function updateBaseRate(context: Context) {
   const repo = payload.repository.name;
 
   if (!branch || !owner || !repo) {
-    throw logger.error(`Missing required data: branch: ${branch}, owner: ${owner}, repo: ${repo}`);
+    throw new Error(`Missing required data: branch: ${branch}, owner: ${owner}, repo: ${repo}`);
   }
 
   const rates = await getBaseRateChanges(context, owner, repo);
 
   if (!rates) {
-    throw logger.error("No changes found in the file");
+    throw new Error("No changes found in the file");
   }
 
   const orgRepos = await listReposForOrg(context);
 
   if (!orgRepos) {
-    throw logger.error(`No repos found for this org ${owner}`);
+    throw new Error(`No repos found for this org ${owner}`);
   }
 
   for (const repo of orgRepos) {
