@@ -165,6 +165,31 @@ export const handlers = [
 
     return HttpResponse.json({ role: "member" });
   }),
+
+  http.get("https://api.github.com/rate_limit", () => {
+    return HttpResponse.json({
+      rate: {
+        limit: 5000,
+        remaining: 4999,
+        reset: 1618713319,
+      },
+    });
+  }),
+
+  // update label
+  http.patch("https://api.github.com/repos/:owner/:repo/labels", async ({ params: { repo }, request: { body } }) => {
+    const { labels } = await getLabel(body);
+    const updatedLabel = await getLabel(body);
+    const currentRepo = db.repo.findFirst({ where: { name: { equals: repo as string } } });
+    const currentLabels = currentRepo?.labels || [];
+    const index = currentLabels.findIndex((label) => (label as Label).name === updatedLabel.name);
+    currentLabels[index] = updatedLabel;
+    db.repo.update({
+      where: { name: { equals: repo as string } },
+      data: { labels: (currentLabels as unknown as { labels: Label[] }).labels },
+    });
+    return HttpResponse.json(labels);
+  }),
 ];
 
 async function getLabel(body: ReadableStream<Uint8Array> | null) {
