@@ -31,13 +31,24 @@ export async function getBaseRateChanges(context: Context, owner: string, repo: 
   const data = commitData.data as unknown as string;
   const changes = data.split("\n");
 
-  const newValue = "+  basePriceMultiplier: ";
-  const oldValue = "-  basePriceMultiplier: ";
-  const previousBaseRate = changes?.find((line) => line.includes(oldValue))?.split(oldValue)[1];
-  const newBaseRate = changes?.find((line) => line.includes(newValue))?.split(newValue)[1];
+  const newValue = /\+\s*basePriceMultiplier:\s*(\S+)/;
+  const oldValue = /-\s*basePriceMultiplier:\s*(\S+)/;
+
+  const newBaseRate = extractBaseRate(changes, newValue);
+  const previousBaseRate = extractBaseRate(changes, oldValue);
+
+  if (!previousBaseRate && !newBaseRate) {
+    logger.error("No base rate changes found in the diff");
+  }
 
   return {
     previousBaseRate: previousBaseRate ? parseFloat(previousBaseRate) : null,
     newBaseRate: newBaseRate ? parseFloat(newBaseRate) : null,
   };
+}
+
+function extractBaseRate(changes: string[], regex: RegExp): string | undefined {
+  const matchedLine = changes?.find((line) => regex.test(line));
+  const match = matchedLine?.match(regex);
+  return match ? match[1] : undefined;
 }
