@@ -43,14 +43,21 @@ export async function updateLabels(
     // If the target price label does not exist, update the current label to the new price
     if (!(await labelExists(context, owner, repo, targetPriceLabel))) {
       await updateLabel(context, owner, repo, targetPriceLabel, priceLabel);
-      logger.info("Updated price label to new target price", { targetPriceLabel });
     }
   } else {
     // If the price label doesn't exist, check if the target price label exists
     if (!(await labelExists(context, owner, repo, targetPriceLabel))) {
       // If it doesn't exist, create it
       await createLabel(context, owner, repo, targetPriceLabel, "price");
-      logger.info("Created new price label", { targetPriceLabel });
     }
   }
+
+  logger.info("Updated price label", {
+    timeLabel,
+    priorityLabel,
+    previousBaseRate,
+    newBaseRate,
+    previousPrice: currentPrice,
+    targetPrice,
+  });
 }
