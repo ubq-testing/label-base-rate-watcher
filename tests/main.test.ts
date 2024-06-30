@@ -66,7 +66,6 @@ describe("Label Base Rate Changes", () => {
       sha: SHA_1,
       modified: [CONFIG_PATH],
       added: [],
-      isAuthed: true,
       withBaseRateChanges: true,
       withPlugin: false,
       amount: 5,
@@ -126,7 +125,6 @@ describe("Label Base Rate Changes", () => {
       sha: SHA_1,
       modified: [CONFIG_PATH],
       added: [],
-      isAuthed: false,
       withBaseRateChanges: true,
       withPlugin: false,
       amount: 5,
@@ -155,7 +153,6 @@ describe("Label Base Rate Changes", () => {
       sha: SHA_1,
       modified: [CONFIG_PATH],
       added: [],
-      isAuthed: true,
       withBaseRateChanges: true,
       withPlugin: false,
       amount: 5,
@@ -188,9 +185,9 @@ describe("Label Base Rate Changes", () => {
       sha: SHA_1,
       modified: [],
       added: [],
-      isAuthed: true,
       withBaseRateChanges: false,
       withPlugin: false,
+
       amount: 5,
     });
     const context = createContext(sender, commits, SHA_1, SHA_1);
@@ -217,7 +214,6 @@ describe("Label Base Rate Changes", () => {
       sha: SHA_1,
       modified: [CONFIG_PATH],
       added: [],
-      isAuthed: true,
       withBaseRateChanges: false,
       withPlugin: true,
       amount: 5,
@@ -250,7 +246,6 @@ describe("Label Base Rate Changes", () => {
       sha: SHA_1,
       modified: [CONFIG_PATH],
       added: [],
-      isAuthed: true,
       withBaseRateChanges: true,
       withPlugin: true,
       amount: 5,
@@ -313,7 +308,6 @@ describe("Label Base Rate Changes", () => {
       sha: SHA_1,
       modified: [CONFIG_PATH],
       added: [],
-      isAuthed: true,
       withBaseRateChanges: true,
       withPlugin: false,
       amount: 5,
@@ -330,12 +324,84 @@ describe("Label Base Rate Changes", () => {
 
     expect(infoSpy).toHaveBeenCalledWith("Skipping push events. A new branch was created");
   });
+
+  it("Should allow a billing manager to update the base rate", async () => {
+    const sender = db.users.findFirst({ where: { id: { equals: 3 } } }) as unknown as Context["payload"]["sender"];
+    const commits = inMemoryCommits(SHA_1, false, true, true);
+    createDBCommit({
+      owner: UBIQUITY,
+      repo: TEST_REPO,
+      sha: SHA_1,
+      modified: [CONFIG_PATH],
+      added: [],
+      withBaseRateChanges: true,
+      withPlugin: true,
+      amount: 27, // billing manager's last day 
+    });
+    const context = createContext(sender, commits, SHA_1, SHA_1);
+    const infoSpy = jest.spyOn(context.logger, "info");
+    const warnSpy = jest.spyOn(context.logger, "warn");
+    const errorSpy = jest.spyOn(context.logger, "error");
+
+    const repo = db.repo.findFirst({ where: { id: { equals: 1 } } });
+    const issue1 = db.issue.findFirst({ where: { id: { equals: 1 } } });
+    const issue2 = db.issue.findFirst({ where: { id: { equals: 3 } } });
+
+    expect(repo?.labels).toHaveLength(29);
+    expect(issue1?.labels).toHaveLength(3);
+    expect(issue2?.labels).toHaveLength(2);
+
+    await plugin(context);
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledTimes(19);
+
+    const updatedRepo = db.repo.findFirst({ where: { id: { equals: 1 } } });
+    const updatedIssue = db.issue.findFirst({ where: { id: { equals: 1 } } });
+    const updatedIssue2 = db.issue.findFirst({ where: { id: { equals: 3 } } });
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledTimes(19);
+    expect(infoSpy).toHaveBeenNthCalledWith(1, "Changes in the commits:", [CONFIG_PATH]);
+    expect(infoSpy).toHaveBeenNthCalledWith(2, ".github/ubiquibot-config.yml was modified or added in the commits");
+
+    for (let i = 1; i <= 17; i++) {
+      expect(infoSpy).toHaveBeenNthCalledWith(i + 2, "Created new price label", { targetPriceLabel: `Price: ${priceMap[i] * 27} USD` });
+    }
+
+    expect(updatedRepo?.labels).toHaveLength(27);
+    expect(updatedIssue?.labels).toHaveLength(3);
+    expect(updatedIssue2?.labels).toHaveLength(3);
+
+    const priceLabels = updatedIssue?.labels.filter((label) => (label as Label).name.includes("Price:"));
+    const priceLabels2 = updatedIssue2?.labels.filter((label) => (label as Label).name.includes("Price:"));
+
+    expect(priceLabels).toHaveLength(1);
+    expect(priceLabels2).toHaveLength(1);
+
+    expect(priceLabels?.map((label) => (label as Label).name)).toContain(`Price: ${priceMap[1] * 27} USD`);
+    expect(priceLabels2?.map((label) => (label as Label).name)).toContain(`Price: ${priceMap[1] * 27} USD`);
+
+    const pusher = context.payload.pusher;
+    const sender_ = context.payload.sender;
+
+    expect(pusher.name).toBe("billing");
+    expect(sender_?.login).toBe("billing");
+  });
 });
 
 const authedUser = {
   email: "ubiquity@ubq",
   name: UBIQUITY,
   username: UBIQUITY,
+  date: new Date().toISOString(),
+};
+
+const billingManager = {
+  email: "billing@ubq",
+  name: "billing",
+  username: "billing",
   date: new Date().toISOString(),
 };
 
@@ -385,11 +451,11 @@ ${withPlugin
 `;
 }
 
-function inMemoryCommits(id: string, isAuthed = true, withBaseRateChanges = true): Context["payload"]["commits"] {
+function inMemoryCommits(id: string, isAuthed = true, withBaseRateChanges = true, isBilling = false): Context["payload"]["commits"] {
   return [
     {
-      author: isAuthed ? authedUser : unAuthedUser,
-      committer: isAuthed ? authedUser : unAuthedUser,
+      author: isAuthed ? authedUser : isBilling ? billingManager : unAuthedUser,
+      committer: isAuthed ? authedUser : isBilling ? billingManager : unAuthedUser,
       id: id,
       message: "chore: update base rate",
       timestamp: new Date().toISOString(),
@@ -403,29 +469,12 @@ function inMemoryCommits(id: string, isAuthed = true, withBaseRateChanges = true
   ];
 }
 
-function getCommitChanges(isAuthed = true, withBaseRateChanges = true, amount = 5, withPlugin = false): string {
-  if (withPlugin) {
-    return getBaseRateChanges(amount, withBaseRateChanges, withPlugin);
-  }
-  if (isAuthed && withBaseRateChanges) {
-    return getBaseRateChanges(amount);
-  }
-  if (isAuthed && !withBaseRateChanges) {
-    return getBaseRateChanges(0, withBaseRateChanges);
-  }
-  if (!isAuthed) {
-    return getBaseRateChanges(amount);
-  }
-  return "";
-}
-
 function createDBCommit({
   owner,
   repo,
   sha,
   modified,
   added,
-  isAuthed,
   withBaseRateChanges,
   withPlugin,
   amount,
@@ -435,7 +484,6 @@ function createDBCommit({
   sha: string;
   modified: string[];
   added: string[];
-  isAuthed: boolean;
   withBaseRateChanges: boolean;
   withPlugin: boolean;
   amount: number;
@@ -452,7 +500,7 @@ function createDBCommit({
     sha,
     modified,
     added,
-    data: getCommitChanges(isAuthed, withBaseRateChanges, amount, withPlugin),
+    data: getBaseRateChanges(amount, withBaseRateChanges, withPlugin),
   });
 }
 

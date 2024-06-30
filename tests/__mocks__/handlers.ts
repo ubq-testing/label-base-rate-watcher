@@ -160,6 +160,10 @@ export const handlers = [
       return HttpResponse.json({ role: "admin" });
     }
 
+    if (username === "billing") {
+      return HttpResponse.json({ role: "billing_manager" });
+    }
+
     return HttpResponse.json({ role: "member" });
   }),
 ];
