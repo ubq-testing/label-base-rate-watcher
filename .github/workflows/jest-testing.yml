@@ -23,7 +23,10 @@ jobs:
         run: corepack enable
 
       - name: Jest With Coverage
-        run: yarn install --immutable --immutable-cache --check-cache && yarn test
+        run: yarn install --immutable --immutable-cache --check-cache
+
+      - name: Run Jest
+        run: yarn test
 
       - name: Add Jest Report to Summary
         if: always()
