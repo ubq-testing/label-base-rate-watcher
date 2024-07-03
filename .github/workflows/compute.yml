@@ -33,6 +33,6 @@ jobs:
       - name: install dependencies
         run: yarn
 
-      - name: execute directive
+      - name: run plugin
         run: npx tsx ./src/main.ts
         id: base-rate-watcher
