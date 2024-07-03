@@ -19,6 +19,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Enable corepack
+        run: corepack enable
+
       - name: Jest With Coverage
         run: yarn install --immutable --immutable-cache --check-cache && yarn test
 
